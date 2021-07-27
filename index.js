@@ -8,6 +8,7 @@ const https = require('https');
 const http = require('http');
 app.use(bodyParser.json());
 
+var getQueryData
 var timeserie
 var timeserie_ricetype 
 var timeserie_standardtype
@@ -24,6 +25,7 @@ var url_data_ricetypename = "http://localhost:3339/grafana/listricetypename"
 var url_data_standardname = "http://localhost:3339/grafana/liststandard"
 var url_data_standardname_homrice = "http://localhost:3339/grafana/liststandard_homrice"
 var url_data_standardname_hommalirice = "http://localhost:3339/grafana/liststandard_hommalirice"
+var url_get_query = "http://localhost:3339/grafana/get_query"
 
 //For testing with production
 //var url_table_riceinspectprocessing = "http://ec2-13-213-62-58.ap-southeast-1.compute.amazonaws.com:3339/get_table_riceinspectprocessing"
@@ -46,6 +48,7 @@ function getData(){
   http.get("http://localhost:3333/api/data/standardtype")
   http.get("http://localhost:3333/api/data/standardtype_homrice")
   http.get("http://localhost:3333/api/data/standardtype_hommalirice")
+  http.get("http://localhost:3333/api/get_query")
 }
 
 
@@ -130,7 +133,7 @@ app.all('/search', function(req, res){
   whiteStandardSearch = []
   homRiceStandardSearch = []
   hommaliRiceStandardSearch = []
-  var searchList = ['inferenceAll']
+  var searchList = ['inferenceAll','query']
 
   _.each(timeserie, function(ts) {
     riceTypeSearch.push(ts.target+"_ricetype");
@@ -181,6 +184,7 @@ function retreiveJSONTABLE(jsondata){
 
 function retreiveJSONURL(jsondata){
   timeserie = jsondata;
+  
 }
 
 function retreiveJSONURL_ricetype(jsondata){
@@ -197,6 +201,11 @@ function retreiveJSONURL_standardtype_homrice(jsondata){
 
 function retreiveJSONURL_standardtype_hommalirice(jsondata){
   timeserie_standardtype_hommalirice = jsondata;
+}
+
+
+function retreiveJSONURL_getQuery(jsondata){
+  getQueryData = jsondata;
 }
 
 // get riceInspectProcessing table
@@ -230,6 +239,40 @@ app.get('/api/table', function(req, res){
   res.json(table);
   
 });
+
+
+//get query timerange
+
+app.get('/api/get_query', function(req, res){
+  
+  let url = url_get_query;
+
+  http.get(url,(res) => {
+      let body = "";
+  
+      res.on("data", (chunk) => {
+          body += chunk;
+      });
+      res.on("end", () => {
+          try {                  
+              let json = JSON.parse(body);           
+              // do something with JSON 
+              retreiveJSONURL_getQuery(json);
+              
+
+          } catch (error) {
+              console.log("This is the part where it is error");
+              console.error(error.message);
+          };
+      });
+  }).on("error", (error) => {
+      console.error(error.message);
+      
+  });
+  res.json(getQueryData);
+  
+});
+
 
 
 
@@ -439,6 +482,10 @@ app.all('/query', function(req, res){
     //test
     if(target.target == "inferenceAll"){
       tsResult = timeserie
+    }
+
+    if(target.target == "query"){
+      tsResult = getQueryData
     }
     /*
     if(target.target == "riceType"){
