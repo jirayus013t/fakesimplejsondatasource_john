@@ -9,6 +9,8 @@ const http = require('http');
 app.use(bodyParser.json());
 
 var getQueryData
+var getQueryData_Daily
+var getQueryData_Monthly
 var timeserie
 var timeserie_ricetype 
 var timeserie_standardtype
@@ -26,6 +28,9 @@ var url_data_standardname = "http://localhost:3339/grafana/liststandard"
 var url_data_standardname_homrice = "http://localhost:3339/grafana/liststandard_homrice"
 var url_data_standardname_hommalirice = "http://localhost:3339/grafana/liststandard_hommalirice"
 var url_get_query = "http://localhost:3339/grafana/get_query"
+var url_get_query_daily = "http://localhost:3339/grafana/get_query_daily"
+var url_get_query_monthly = "http://localhost:3339/grafana/get_query_monthly"
+
 
 //For testing with production
 //var url_table_riceinspectprocessing = "http://ec2-13-213-62-58.ap-southeast-1.compute.amazonaws.com:3339/get_table_riceinspectprocessing"
@@ -49,6 +54,8 @@ function getData(){
   http.get("http://localhost:3333/api/data/standardtype_homrice")
   http.get("http://localhost:3333/api/data/standardtype_hommalirice")
   http.get("http://localhost:3333/api/get_query")
+  http.get("http://localhost:3333/api/get_query_daily")
+  http.get("http://localhost:3333/api/get_query_monthly")
 }
 
 
@@ -133,7 +140,7 @@ app.all('/search', function(req, res){
   whiteStandardSearch = []
   homRiceStandardSearch = []
   hommaliRiceStandardSearch = []
-  var searchList = ['inferenceAll','query']
+  var searchList = ['inferenceAll','query_Weekly', 'query_Daily', 'query_Monthly']
 
   _.each(timeserie, function(ts) {
     riceTypeSearch.push(ts.target+"_ricetype");
@@ -208,6 +215,13 @@ function retreiveJSONURL_getQuery(jsondata){
   getQueryData = jsondata;
 }
 
+function retreiveJSONURL_getQuery_Daily(jsondata){
+  getQueryData_Daily = jsondata;
+}
+
+function retreiveJSONURL_getQuery_Monthly(jsondata){
+  getQueryData_Monthly = jsondata;
+}
 // get riceInspectProcessing table
 app.get('/api/table', function(req, res){
 
@@ -241,7 +255,7 @@ app.get('/api/table', function(req, res){
 });
 
 
-//get query timerange
+//get query timerange (Weekly)
 
 app.get('/api/get_query', function(req, res){
   
@@ -273,8 +287,69 @@ app.get('/api/get_query', function(req, res){
   
 });
 
+//get query timerange (Daily)
+app.get('/api/get_query_daily', function(req, res){
+  
+  let url = url_get_query_daily;
+
+  http.get(url,(res) => {
+      let body = "";
+  
+      res.on("data", (chunk) => {
+          body += chunk;
+      });
+      res.on("end", () => {
+          try {                  
+              let json = JSON.parse(body);           
+              // do something with JSON 
+              retreiveJSONURL_getQuery_Daily(json);
+              
+
+          } catch (error) {
+              console.log("This is the part where it is error");
+              console.error(error.message);
+          };
+      });
+  }).on("error", (error) => {
+      console.error(error.message);
+      
+  });
+  res.json(getQueryData_Daily);
+  
+});
 
 
+
+//get query timerange (Monthly)
+app.get('/api/get_query_monthly', function(req, res){
+  
+  let url = url_get_query_monthly;
+
+  http.get(url,(res) => {
+      let body = "";
+  
+      res.on("data", (chunk) => {
+          body += chunk;
+      });
+      res.on("end", () => {
+          try {                  
+              let json = JSON.parse(body);           
+              // do something with JSON 
+              retreiveJSONURL_getQuery_Monthly(json);
+              
+
+          } catch (error) {
+              console.log("This is the part where it is error");
+              console.error(error.message);
+          };
+      });
+  }).on("error", (error) => {
+      console.error(error.message);
+      
+  });
+  res.json(getQueryData_Monthly);
+  
+});
 
 
 // get all data including riceInspectProcessing and listInference
@@ -484,8 +559,16 @@ app.all('/query', function(req, res){
       tsResult = timeserie
     }
 
-    if(target.target == "query"){
+    if(target.target == "query_Weekly"){
       tsResult = getQueryData
+    }
+
+    if(target.target == "query_Daily"){
+      tsResult = getQueryData_Daily
+    }
+
+    if(target.target == "query_Monthly"){
+      tsResult = getQueryData_Monthly
     }
     /*
     if(target.target == "riceType"){
